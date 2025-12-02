@@ -1,0 +1,539 @@
+# 五子棋游戏实现
+
+我将创建一个完整的五子棋游戏，包含棋盘、交互功能、胜负判断和游戏状态显示。所有代码都保存在一个HTML文件中。
+
+## 设计思路
+1. 创建15×15的棋盘
+2. 实现黑白棋子交替落子
+3. 添加胜负判断逻辑
+4. 设计简洁美观的界面
+5. 添加游戏控制功能
+
+下面是完整的实现代码：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #f1f1f1;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a0a0c0;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .board-container {
+            position: relative;
+            background-color: #dcb35c;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        #board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            width: 500px;
+            height: 500px;
+            background-color: #dcb35c;
+            border: 2px solid #8b4513;
+            position: relative;
+        }
+        
+        .cell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .cell:hover::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .cell.horizontal-line {
+            border-right: 1px solid #000;
+        }
+        
+        .cell.vertical-line {
+            border-bottom: 1px solid #000;
+        }
+        
+        .cell.corner {
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+        }
+        
+        .piece {
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3), 0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #666, #000);
+        }
+        
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+        }
+        
+        .piece.last-move {
+            box-shadow: 0 0 0 2px #ff4757, inset 0 0 5px rgba(0, 0, 0, 0.3), 0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-panel {
+            background-color: rgba(30, 30, 60, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            width: 300px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .current-player {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .player-piece {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        
+        .player-piece.black {
+            background: radial-gradient(circle at 30% 30%, #666, #000);
+        }
+        
+        .player-piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+        }
+        
+        .player-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .status {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ff9a9e;
+            text-align: center;
+            margin-bottom: 25px;
+            min-height: 36px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #restart-btn {
+            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 100%);
+            color: #1a1a2e;
+        }
+        
+        #restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
+        }
+        
+        #undo-btn {
+            background: linear-gradient(90deg, #6a89cc 0%, #b8e994 100%);
+            color: #1a1a2e;
+        }
+        
+        #undo-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(106, 137, 204, 0.4);
+        }
+        
+        #hint-btn {
+            background: linear-gradient(90deg, #f6d365 0%, #fda085 100%);
+            color: #1a1a2e;
+        }
+        
+        #hint-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(253, 160, 133, 0.4);
+        }
+        
+        .game-info {
+            background-color: rgba(40, 40, 70, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .game-info h3 {
+            margin-bottom: 10px;
+            color: #a0a0c0;
+            font-size: 1.1rem;
+        }
+        
+        .game-info p {
+            line-height: 1.6;
+            color: #c0c0e0;
+            font-size: 0.95rem;
+        }
+        
+        .rules {
+            margin-top: 30px;
+            max-width: 800px;
+            background-color: rgba(30, 30, 60, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .rules h2 {
+            color: #ff9a9e;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .rules ul {
+            padding-left: 20px;
+            color: #c0c0e0;
+            line-height: 1.6;
+        }
+        
+        .rules li {
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #a0a0c0;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 900px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            #board {
+                width: 400px;
+                height: 400px;
+            }
+            
+            .info-panel {
+                width: 400px;
+            }
+        }
+        
+        @media (max-width: 500px) {
+            #board {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .info-panel {
+                width: 320px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>五子棋游戏</h1>
+        <p class="subtitle">黑棋先行，先形成五子连线者获胜</p>
+    </div>
+    
+    <div class="game-container">
+        <div class="board-container">
+            <div id="board"></div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="current-player">
+                <div class="player-indicator">
+                    <div class="player-piece black" id="current-player-piece"></div>
+                    <div class="player-text">当前玩家: <span id="current-player-text">黑棋</span></div>
+                </div>
+                <div class="moves-count">步数: <span id="moves-count">0</span></div>
+            </div>
+            
+            <div class="status" id="status">游戏进行中</div>
+            
+            <div class="controls">
+                <button id="restart-btn">重新开始游戏</button>
+                <button id="undo-btn">悔棋 (撤销上一步)</button>
+                <button id="hint-btn">提示 (显示最佳落子点)</button>
+            </div>
+            
+            <div class="game-info">
+                <h3>游戏信息</h3>
+                <p>棋盘大小: 15 × 15</p>
+                <p>游戏规则: 横、竖、斜方向先连成五子者获胜</p>
+                <p>最后落子: <span id="last-move-info">无</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="rules">
+        <h2>游戏规则</h2>
+        <ul>
+            <li>五子棋是两人对弈的纯策略型棋类游戏</li>
+            <li>棋盘由15条横线和15条竖线交叉组成，共225个交叉点</li>
+            <li>黑棋先行，双方轮流在棋盘上放置棋子</li>
+            <li>先在横、竖、斜任意方向连成五子的一方获胜</li>
+            <li>如果棋盘下满仍未分出胜负，则为平局</li>
+        </ul>
+    </div>
+    
+    <div class="footer">
+        <p>五子棋游戏 | 使用 HTML、CSS 和 JavaScript 实现 | 所有代码保存在单个 HTML 文件中</p>
+    </div>
+
+    <script>
+        // 游戏状态变量
+        let board = []; // 棋盘状态，0=空，1=黑棋，2=白棋
+        let currentPlayer = 1; // 当前玩家，1=黑棋，2=白棋
+        let gameOver = false;
+        let moveHistory = []; // 记录每一步的落子位置
+        let lastMove = null; // 最后一步的位置
+        
+        // 初始化棋盘
+        function initBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            
+            // 初始化棋盘数组
+            board = Array(15).fill().map(() => Array(15).fill(0));
+            
+            // 创建棋盘格子
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 15; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    // 添加边框线
+                    if (col < 14 && row < 14) {
+                        cell.classList.add('corner');
+                    } else if (col < 14) {
+                        cell.classList.add('horizontal-line');
+                    } else if (row < 14) {
+                        cell.classList.add('vertical-line');
+                    }
+                    
+                    // 添加点击事件
+                    cell.addEventListener('click', () => makeMove(row, col));
+                    
+                    // 设置数据属性
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    boardElement.appendChild(cell);
+                }
+            }
+            
+            // 重置游戏状态
+            currentPlayer = 1;
+            gameOver = false;
+            moveHistory = [];
+            lastMove = null;
+            
+            // 更新UI
+            updateGameStatus();
+            updatePlayerIndicator();
+            document.getElementById('moves-count').textContent = '0';
+            document.getElementById('last-move-info').textContent = '无';
+            document.getElementById('status').textContent = '游戏进行中';
+            document.getElementById('status').style.color = '#ff9a9e';
+        }
+        
+        // 落子函数
+        function makeMove(row, col) {
+            // 如果游戏结束或该位置已有棋子，则不允许落子
+            if (gameOver || board[row][col] !== 0) {
+                return;
+            }
+            
+            // 记录这一步
+            moveHistory.push({row, col, player: currentPlayer});
+            
+            // 在棋盘上放置棋子
+            board[row][col] = currentPlayer;
+            lastMove = {row, col};
+            
+            // 在棋盘上显示棋子
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            const piece = document.createElement('div');
+            piece.className = `piece ${currentPlayer === 1 ? 'black' : 'white'}`;
+            piece.dataset.player = currentPlayer;
+            cell.appendChild(piece);
+            
+            // 移除之前最后一步的标记
+            document.querySelectorAll('.piece.last-move').forEach(p => p.classList.remove('last-move'));
+            
+            // 标记最后一步
+            piece.classList.add('last-move');
+            
+            // 更新步数
+            document.getElementById('moves-count').textContent = moveHistory.length;
+            
+            // 更新最后一步信息
+            const playerName = currentPlayer === 1 ? '黑棋' : '白棋';
+            const colName = String.fromCharCode(65 + col); // 将列转换为字母
+            document.getElementById('last-move-info').textContent = `${playerName} (${colName}${row+1})`;
+            
+            // 检查胜负
+            if (checkWin(row, col)) {
+                gameOver = true;
+                const winner = currentPlayer === 1 ? '黑棋' : '白棋';
+                document.getElementById('status').textContent = `${winner}获胜！`;
+                document.getElementById('status').style.color = '#4cd137';
+                return;
+            }
+            
+            // 检查平局
+            if (moveHistory.length === 225) {
+                gameOver = true;
+                document.getElementById('status').textContent = '平局！';
+                document.getElementById('status').style.color = '#fbc531';
+                return;
+            }
+            
+            // 切换玩家
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updatePlayerIndicator();
+        }
+        
+        // 检查是否获胜
+        function checkWin(row, col) {
+            const player = board[row][col];
+            
+            // 检查的四个方向：水平、垂直、左上到右下、右上到左下
+            const directions = [
+                [[0, 1], [0, -1]],  // 水平
+                [[1, 0], [-1, 0]],  // 垂直
+                [[1, 1], [-1, -1]], // 左上到右下
+                [[1, -1], [-1, 1]]  // 右上到左下
+            ];
+            
+            for (const direction of directions) {
+                let count = 1; // 当前位置已经有一个棋子
+                
+                // 检查每个方向的两个相反方向
+                for (const [dx, dy] of direction) {
+                    let r = row + dx;
+                    let c = col + dy;
+                    
+                    // 沿着这个方向计数连续的相同棋子
+                    while (
+                        r >= 0 && r < 15 && 
+                        c >= 0 && c < 15 && 
+                        board[r][c] === player
+                    ) {
+                        count++;
+                        r += dx;
+                        c += dy;
+                    }
+                }
+                
+                // 如果有5个或更多连续棋子，则获胜
+                if (count >= 5) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // 更新玩家指示器
+        function updatePlayerIndicator() {
+            const playerPiece = document.getElementById('current-player-piece');
+            const playerText = document.getElementById('current-player-text');
+            
+            if (currentPlayer === 1) {
+                playerPiece.className = 'player-piece black';
+                playerText.textContent = '黑棋';
+            }
